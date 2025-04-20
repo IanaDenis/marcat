@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
 import 'package:peval/models/product.dart';
+import 'package:peval/models/sale_item.dart';
 import 'package:peval/services/product_service.dart';
+import 'package:peval/services/sales_service.dart';
 import 'package:peval/utils/formatter.dart';
 import 'package:peval/widgets/app_drawer.dart';
 
@@ -16,6 +18,9 @@ class SalePage extends StatefulWidget {
 class _SalePageState extends State<SalePage> {
   List<Product> _products = [];
   Map<int, int> _cartItems = {}; // Map<productId, quantity>
+  final _productService = ProductService();
+  final _salesService = SalesService();
+  bool _isProcessing = false;
   
   @override
   void initState() {
@@ -24,11 +29,21 @@ class _SalePageState extends State<SalePage> {
   }
 
   Future<void> _loadProducts() async {
-    final productService = GetIt.I<ProductService>();
-    List<Product> products = await productService.getProducts();
-    setState(() {
-      _products = products;
-    });
+    try {
+      final products = await _productService.getProducts();
+      setState(() {
+        _products = products;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eroare la încărcarea produselor: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _addToCart(Product product) {
@@ -53,7 +68,7 @@ class _SalePageState extends State<SalePage> {
   double get _cartTotal {
     double total = 0.0;
     _cartItems.forEach((productId, quantity) {
-      final product = _products.firstWhere((p) => p.id == productId);
+      final product = _products.firstWhere((p) => p.id == productId, orElse: () => Product(name: '', price: 0));
       total += product.price * quantity;
     });
     return total;
@@ -64,11 +79,73 @@ class _SalePageState extends State<SalePage> {
     List<MapEntry<Product, int>> result = [];
     
     _cartItems.forEach((productId, quantity) {
-      final product = _products.firstWhere((p) => p.id == productId);
+      final product = _products.firstWhere((p) => p.id == productId, orElse: () => Product(name: 'Produs necunoscut', price: 0));
       result.add(MapEntry(product, quantity));
     });
     
     return result;
+  }
+
+  // Pregătește și salvează bonul fiscal
+  Future<void> _processSale() async {
+    if (_cartItems.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+    });
+
+    try {
+      // Creăm un map de prețuri pentru fiecare produs din coș
+      Map<int, double> productPrices = {};
+      for (var product in _products) {
+        if (_cartItems.containsKey(product.id)) {
+          productPrices[product.id] = product.price;
+        }
+      }
+      
+      // Generăm elementele de vânzare
+      final List<SaleItem> saleItems = _salesService.createSaleItems(_cartItems, productPrices);
+      
+      // Calculăm totalul (deși avem deja _cartTotal, folosim metoda din service pentru consistență)
+      final double total = _salesService.calculateTotal(saleItems);
+      
+      // Salvăm vânzarea în baza de date
+      final int saleId = await _salesService.saveSale(saleItems, total);
+      
+      if (mounted) {
+        // Afișăm mesaj de succes
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Vânzare finalizată cu succes! ID: $saleId'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Golim coșul după finalizarea vânzării
+        setState(() {
+          _cartItems.clear();
+          _isProcessing = false;
+        });
+        
+        // Aici puteți adăuga logica pentru printarea bonului fiscal
+        // _printReceipt(saleId, saleItems, total);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eroare la procesarea vânzării: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -297,15 +374,17 @@ class _SalePageState extends State<SalePage> {
                             backgroundColor: Colors.green,
                             foregroundColor: Colors.white,
                           ),
-                          onPressed: _cartProducts.isEmpty
+                          onPressed: _cartProducts.isEmpty || _isProcessing
                               ? null
-                              : () {
-                                  // Logica pentru finalizarea vânzării și printarea bonului
-                                },
-                          child: const Text(
-                            'EMITE BON FISCAL',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                              : _processSale,
+                          child: _isProcessing
+                              ? CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                )
+                              : const Text(
+                                  'EMITE BON FISCAL',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                         ),
                       ),
                     ],

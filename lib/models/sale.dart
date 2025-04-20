@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
 
+part 'sale.g.dart'; // acest fișier va fi generat de Isar
+
 @Collection()
 class Sale {
   Id id = Isar.autoIncrement; // Id automat generat

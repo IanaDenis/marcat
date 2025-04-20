@@ -11,7 +11,7 @@ class DatabaseService {
   // Deschide baza de date
   Future<void> open() async {
     final dir = await getApplicationDocumentsDirectory();
-    isar = await Isar.open(
+    final isar = await Isar.open(
       [ProductSchema, SaleSchema, SaleItemSchema],
       directory: dir.path,
     );

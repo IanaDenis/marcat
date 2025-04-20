@@ -31,6 +31,11 @@ const SaleItemSchema = CollectionSchema(
       id: 2,
       name: r'quantity',
       type: IsarType.long,
+    ),
+    r'saleId': PropertySchema(
+      id: 3,
+      name: r'saleId',
+      type: IsarType.long,
     )
   },
   estimateSize: _saleItemEstimateSize,
@@ -39,14 +44,7 @@ const SaleItemSchema = CollectionSchema(
   deserializeProp: _saleItemDeserializeProp,
   idName: r'id',
   indexes: {},
-  links: {
-    r'sale': LinkSchema(
-      id: 7852538354613809729,
-      name: r'sale',
-      target: r'Sale',
-      single: true,
-    )
-  },
+  links: {},
   embeddedSchemas: {},
   getId: _saleItemGetId,
   getLinks: _saleItemGetLinks,
@@ -72,6 +70,7 @@ void _saleItemSerialize(
   writer.writeDouble(offsets[0], object.price);
   writer.writeLong(offsets[1], object.productId);
   writer.writeLong(offsets[2], object.quantity);
+  writer.writeLong(offsets[3], object.saleId);
 }
 
 SaleItem _saleItemDeserialize(
@@ -84,6 +83,7 @@ SaleItem _saleItemDeserialize(
     price: reader.readDouble(offsets[0]),
     productId: reader.readLong(offsets[1]),
     quantity: reader.readLong(offsets[2]),
+    saleId: reader.readLong(offsets[3]),
   );
   object.id = id;
   return object;
@@ -102,6 +102,8 @@ P _saleItemDeserializeProp<P>(
       return (reader.readLong(offset)) as P;
     case 2:
       return (reader.readLong(offset)) as P;
+    case 3:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -112,12 +114,11 @@ Id _saleItemGetId(SaleItem object) {
 }
 
 List<IsarLinkBase<dynamic>> _saleItemGetLinks(SaleItem object) {
-  return [object.sale];
+  return [];
 }
 
 void _saleItemAttach(IsarCollection<dynamic> col, Id id, SaleItem object) {
   object.id = id;
-  object.sale.attach(col, col.isar.collection<Sale>(), r'sale', id);
 }
 
 extension SaleItemQueryWhereSort on QueryBuilder<SaleItem, SaleItem, QWhere> {
@@ -416,26 +417,66 @@ extension SaleItemQueryFilter
       ));
     });
   }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> saleIdEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'saleId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> saleIdGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'saleId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> saleIdLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'saleId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> saleIdBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'saleId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension SaleItemQueryObject
     on QueryBuilder<SaleItem, SaleItem, QFilterCondition> {}
 
 extension SaleItemQueryLinks
-    on QueryBuilder<SaleItem, SaleItem, QFilterCondition> {
-  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> sale(
-      FilterQuery<Sale> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.link(q, r'sale');
-    });
-  }
-
-  QueryBuilder<SaleItem, SaleItem, QAfterFilterCondition> saleIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.linkLength(r'sale', 0, true, 0, true);
-    });
-  }
-}
+    on QueryBuilder<SaleItem, SaleItem, QFilterCondition> {}
 
 extension SaleItemQuerySortBy on QueryBuilder<SaleItem, SaleItem, QSortBy> {
   QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortByPrice() {
@@ -471,6 +512,18 @@ extension SaleItemQuerySortBy on QueryBuilder<SaleItem, SaleItem, QSortBy> {
   QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortByQuantityDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'quantity', Sort.desc);
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortBySaleId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'saleId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> sortBySaleIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'saleId', Sort.desc);
     });
   }
 }
@@ -524,6 +577,18 @@ extension SaleItemQuerySortThenBy
       return query.addSortBy(r'quantity', Sort.desc);
     });
   }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> thenBySaleId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'saleId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QAfterSortBy> thenBySaleIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'saleId', Sort.desc);
+    });
+  }
 }
 
 extension SaleItemQueryWhereDistinct
@@ -543,6 +608,12 @@ extension SaleItemQueryWhereDistinct
   QueryBuilder<SaleItem, SaleItem, QDistinct> distinctByQuantity() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'quantity');
+    });
+  }
+
+  QueryBuilder<SaleItem, SaleItem, QDistinct> distinctBySaleId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'saleId');
     });
   }
 }
@@ -570,6 +641,12 @@ extension SaleItemQueryProperty
   QueryBuilder<SaleItem, int, QQueryOperations> quantityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'quantity');
+    });
+  }
+
+  QueryBuilder<SaleItem, int, QQueryOperations> saleIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'saleId');
     });
   }
 }
