@@ -66,6 +66,42 @@ class _ReportPageState extends State<ReportPage> {
     }
   }
 
+  // Funcție pentru a adăuga o vânzare de test pentru debugging
+  Future<void> _addTestSale() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      await _reportService.addTestSale();
+      
+      // Reîncărcăm vânzările după ce am adăugat una de test
+      await _loadSalesForDate(_selectedDate);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vânzare de test adăugată cu succes!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Eroare la adăugarea vânzării de test: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -229,6 +265,12 @@ class _ReportPageState extends State<ReportPage> {
       appBar: AppBar(
         title: const Text('Rapoarte Vânzări'),
         actions: [
+          // Buton pentru adăugarea unei vânzări de test (doar pentru debugging)
+          IconButton(
+            icon: const Icon(Icons.add_circle),
+            onPressed: _addTestSale,
+            tooltip: 'Adaugă vânzare de test',
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => _loadSalesForDate(_selectedDate),
@@ -383,12 +425,27 @@ class _ReportPageState extends State<ReportPage> {
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.shopping_cart),
-              label: const Text('Vânzare Nouă'),
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/sale');
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.shopping_cart),
+                  label: const Text('Vânzare Nouă'),
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(context, '/sale');
+                  },
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add_circle),
+                  label: const Text('Adaugă Vânzare de Test'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _addTestSale,
+                ),
+              ],
             ),
           ],
         ),

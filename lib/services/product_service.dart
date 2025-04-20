@@ -14,7 +14,19 @@ class ProductService {
   // Preia toate produsele
   Future<List<Product>> getProducts() async {
     final db = await _databaseService.isar;
-    return await db.products.where().findAll();  }
+    
+    // Metoda alternativă pentru findAll() în această versiune de Isar
+    final jsonList = await db.products.buildQuery().exportJson();
+    
+    // Convertim manual din JSON în obiecte Product
+    return jsonList.map((json) {
+      return Product(
+        id: json['id'] as int,
+        name: json['name'] as String,
+        price: json['price'] as double,
+      );
+    }).toList();
+  }
 
   // Adaugă un produs nou
   Future<int> addProduct(Product product) async {
@@ -40,18 +52,18 @@ class ProductService {
     });
   }
 
-  // Caută produse după nume
+  // Caută produse după nume - implementare alternativă
   Future<List<Product>> searchProducts(String query) async {
-    final db = await _databaseService.isar;
     if (query.isEmpty) {
       return getProducts();
     }
     
-  return await db.products
-      .filter()
-      .nameContains(query, caseSensitive: false)
-      .findAll();
-    }
+    // Obținem toate produsele și filtrăm manual
+    final allProducts = await getProducts();
+    return allProducts.where((product) => 
+      product.name.toLowerCase().contains(query.toLowerCase())
+    ).toList();
+  }
 
   // Găsește un produs după ID
   Future<Product?> getProductById(int id) async {
