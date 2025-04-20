@@ -15,6 +15,10 @@ dependencies:
   get_it: ^7.2.0
   isar: ^3.1.0+1
   path_provider: ^2.1.2
+  pdf: ^3.10.7
+  printing: ^5.11.1 
+  flutter_bluetooth_printer: ^1.0.0
+  permission_handler: ^11.1.0
   intl: ^0.19.0  # Pentru formatarea datelor și a valutei
   isar_flutter_libs: ^3.1.0+1  # Adăugat biblioteca nativă pentru Isar
   esc_pos_utils: 
